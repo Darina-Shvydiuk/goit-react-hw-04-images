@@ -1,6 +1,6 @@
 import s from './App.module.css';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Searchbar } from './Searchbar';
@@ -23,34 +23,36 @@ export const App = () => {
   const [status, setStatus] = useState(Status.IDLE);
   const [isLoadBtnShown, setIsLoadBtnShown] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      if (!query) {
-        return;
-      }
-      setStatus(Status.PENDING);
+  const getImagesHook = useCallback(async () => {
+    if (!query) {
+      return;
+    }
+    setStatus(Status.PENDING);
 
-      try {
-        const { data } = await fetchImages(query, page);
+    try {
+      const { data } = await fetchImages(query, page);
 
-        if (!data.hits.length) {
-          setStatus(Status.REJECTED);
-          setImages([]);
-          return toast.info('Are you probably wrong? Try again.');
-        }
-
-        setStatus(Status.RESOLVED);
-        setImages(prevImages =>
-          page > 1 ? [...prevImages, ...data.hits] : data.hits
-        );
-        setIsLoadBtnShown(
-          data.totalHits > PER_PAGE && data.totalHits / page > PER_PAGE
-        );
-      } catch {
+      if (!data.hits.length) {
         setStatus(Status.REJECTED);
+        setImages([]);
+        return toast.info('Are you probably wrong? Try again.');
       }
-    })();
+
+      setStatus(Status.RESOLVED);
+      setImages(prevImages =>
+        page > 1 ? [...prevImages, ...data.hits] : data.hits
+      );
+      setIsLoadBtnShown(
+        data.totalHits > PER_PAGE && data.totalHits / page > PER_PAGE
+      );
+    } catch {
+      setStatus(Status.REJECTED);
+    }
   }, [query, page]);
+
+  useEffect(() => {
+    getImagesHook();
+  }, [getImagesHook]);
 
   const handleFormSubmit = search => {
     setPage(1);
@@ -75,3 +77,32 @@ export const App = () => {
     </div>
   );
 };
+
+// варіант 2 через іфі
+
+// useEffect(() => {
+
+// (async () => {
+//   if (!query) {
+//     return;
+//   }
+//   setStatus(Status.PENDING);
+//   try {
+//     const { data } = await fetchImages(query, page);
+//     if (!data.hits.length) {
+//       setStatus(Status.REJECTED);
+//       setImages([]);
+//       return toast.info('Are you probably wrong? Try again.');
+//     }
+//     setStatus(Status.RESOLVED);
+//     setImages(prevImages =>
+//       page > 1 ? [...prevImages, ...data.hits] : data.hits
+//     );
+//     setIsLoadBtnShown(
+//       data.totalHits > PER_PAGE && data.totalHits / page > PER_PAGE
+//     );
+//   } catch {
+//     setStatus(Status.REJECTED);
+//   }
+// })();
+// }, [query,page]);
